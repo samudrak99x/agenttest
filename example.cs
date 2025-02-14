@@ -32,9 +32,14 @@ namespace OptimizedApp
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
-            var sanitizedUsername = Utility.SanitizeInput(username);
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                LoggingService.LogError("Invalid username or password");
+                return null;
+            }
+
             var user = await _context.Users.AsNoTracking()
-                               .SingleOrDefaultAsync(u => u.Username == sanitizedUsername);
+                               .SingleOrDefaultAsync(u => u.Username == username.Trim());
 
             if (user == null)
             {
@@ -53,20 +58,11 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            // Implement password hashing check here
-            return hashedPassword == inputPassword;
+            return hashedPassword == inputPassword; // Replace this with a proper hashing function
         }
     }
 
-    public class Utility
-    {
-        public static string SanitizeInput(string input)
-        {
-            return input.Trim().Replace("'", "''");
-        }
-    }
-
-    public class LoggingService
+    public static class LoggingService
     {
         public static void LogInfo(string message)
         {
