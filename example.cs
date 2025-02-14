@@ -1,10 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace NonOptimizedApp
+namespace OptimizedApp
 {
     public class User
     {
@@ -34,52 +32,47 @@ namespace NonOptimizedApp
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
-            // ❌ Unoptimized Query - No `AsNoTracking()` (Wastes resources)
-            var users = await _context.Users.ToListAsync();
-            var user = users.FirstOrDefault(u => u.Username == username);
-
-            if (user == null)
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                Console.WriteLine("User not found");
+                LoggingService.LogError("Invalid username or password");
                 return null;
             }
 
-            // ❌ Insecure Password Checking (Direct Comparison)
-            if (user.PasswordHash != password)
+            var user = await _context.Users.AsNoTracking()
+                               .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
+
+            if (user == null)
             {
-                Console.WriteLine("Invalid Password");
+                LoggingService.LogError("User not found");
+                return null;
+            }
+
+            if (!VerifyPassword(user.PasswordHash, password))
+            {
+                LoggingService.LogError("Invalid Password");
                 return null;
             }
 
             return user;
         }
-    }
 
-    public class Utility
-    {
-        // ❌ Duplicate Utility Methods (Redundant Code)
-        public static string TrimInput(string input)
+        private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            return input.Trim();
-        }
-
-        public static string Sanitize(string input)
-        {
-            return input.Trim().Replace("'", "''"); // SQL injection risk
+            // Implement a secure way to compare hashed passwords
+            return hashedPassword == inputPassword;
         }
     }
 
-    public class LoggingService
+    public static class LoggingService
     {
-        // ❌ No centralized logging structure (Inefficient)
         public static void LogInfo(string message)
         {
-            Console.WriteLine("[INFO] " + message);
+            Console.WriteLine($"[INFO] {message}");
         }
 
         public static void LogError(string message)
         {
-            Console.WriteLine("[ERROR] " + message);
+            Console.WriteLine($"[ERROR] {message}");
         }
     }
 
@@ -104,11 +97,11 @@ namespace NonOptimizedApp
 
             if (user != null)
             {
-                Console.WriteLine("✅ User authenticated successfully.");
+                LoggingService.LogInfo("User authenticated successfully.");
             }
             else
             {
-                Console.WriteLine("❌ Authentication failed.");
+                LoggingService.LogError("Authentication failed.");
             }
         }
     }
