@@ -15,7 +15,7 @@ namespace OptimizedApp
     {
         public DbSet<User> Users { get; set; }
 
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
@@ -39,22 +39,22 @@ namespace OptimizedApp
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                LogError("Invalid username or password");
+                LogError("Invalid username or password.");
                 return null;
             }
 
             var user = await _context.Users.AsNoTracking()
                               .SingleOrDefaultAsync(u => u.Username == username.Trim());
 
-            if (user == null)
+            if (user is null)
             {
-                LogError("User not found");
+                LogError("User not found.");
                 return null;
             }
 
             if (!VerifyPassword(user.PasswordHash, password))
             {
-                LogError("Invalid Password");
+                LogError("Invalid password.");
                 return null;
             }
 
@@ -68,9 +68,9 @@ namespace OptimizedApp
             return hashedPassword == inputPassword;
         }
 
-        private void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
+        private static void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
 
-        private void LogError(string message) => Console.WriteLine($"[ERROR] {message}");
+        private static void LogError(string message) => Console.WriteLine($"[ERROR] {message}");
     }
 
     class Program
@@ -78,7 +78,7 @@ namespace OptimizedApp
         static async Task Main(string[] args)
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: "TestDb")
+                .UseInMemoryDatabase("TestDb")
                 .Options;
 
             using var context = new AppDbContext(options);
