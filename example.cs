@@ -39,7 +39,7 @@ namespace OptimizedApp
             }
 
             var user = await _context.Users.AsNoTracking()
-                               .SingleOrDefaultAsync(u => u.Username == username.Trim());
+                               .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
             {
@@ -58,7 +58,8 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            return hashedPassword == inputPassword; // Replace this with a proper hashing function
+            // Implement a secure way to compare hashed passwords
+            return hashedPassword == inputPassword;
         }
     }
 
@@ -66,12 +67,12 @@ namespace OptimizedApp
     {
         public static void LogInfo(string message)
         {
-            Console.WriteLine("[INFO] " + message);
+            Console.WriteLine($"[INFO] {message}");
         }
 
         public static void LogError(string message)
         {
-            Console.WriteLine("[ERROR] " + message);
+            Console.WriteLine($"[ERROR] {message}");
         }
     }
 
