@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,8 +32,9 @@ namespace OptimizedApp
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
+            var sanitizedUsername = Utility.SanitizeInput(username);
             var user = await _context.Users.AsNoTracking()
-                               .SingleOrDefaultAsync(u => u.Username == username);
+                               .SingleOrDefaultAsync(u => u.Username == sanitizedUsername);
 
             if (user == null)
             {
