@@ -56,7 +56,8 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            return hashedPassword == inputPassword; // Placeholder for secure hash comparison
+            // Implement secure password hash comparison here
+            return hashedPassword == inputPassword; 
         }
 
         private static void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
@@ -85,7 +86,7 @@ namespace OptimizedApp
             string username = Console.ReadLine()?.Trim();
 
             Console.WriteLine("Enter Password:");
-            string password = Console.ReadLine();
+            string password = Console.ReadLine()?.Trim();
 
             await authService.AuthenticateUserAsync(username, password);
         }
