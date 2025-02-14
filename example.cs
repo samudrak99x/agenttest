@@ -27,32 +27,39 @@ namespace OptimizedApp
 
         public AuthenticationService(AppDbContext context)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrWhiteSpace(username))
             {
-                LoggingService.LogError("Invalid username or password");
+                LogError("Invalid username");
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(password))
+            {
+                LogError("Invalid password");
                 return null;
             }
 
             var user = await _context.Users.AsNoTracking()
-                               .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
+                              .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
             {
-                LoggingService.LogError("User not found");
+                LogError("User not found");
                 return null;
             }
 
             if (!VerifyPassword(user.PasswordHash, password))
             {
-                LoggingService.LogError("Invalid Password");
+                LogError("Invalid Password");
                 return null;
             }
 
+            LogInfo("User authenticated successfully.");
             return user;
         }
 
@@ -61,19 +68,10 @@ namespace OptimizedApp
             // Implement a secure way to compare hashed passwords
             return hashedPassword == inputPassword;
         }
-    }
 
-    public static class LoggingService
-    {
-        public static void LogInfo(string message)
-        {
-            Console.WriteLine($"[INFO] {message}");
-        }
+        private void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
 
-        public static void LogError(string message)
-        {
-            Console.WriteLine($"[ERROR] {message}");
-        }
+        private void LogError(string message) => Console.WriteLine($"[ERROR] {message}");
     }
 
     class Program
@@ -84,7 +82,7 @@ namespace OptimizedApp
                 .UseInMemoryDatabase(databaseName: "TestDb")
                 .Options;
 
-            using var context = new AppDbContext();
+            using var context = new AppDbContext(options);
             var authService = new AuthenticationService(context);
 
             Console.WriteLine("Enter Username:");
@@ -93,16 +91,7 @@ namespace OptimizedApp
             Console.WriteLine("Enter Password:");
             string password = Console.ReadLine();
 
-            var user = await authService.AuthenticateUserAsync(username, password);
-
-            if (user != null)
-            {
-                LoggingService.LogInfo("User authenticated successfully.");
-            }
-            else
-            {
-                LoggingService.LogError("Authentication failed.");
-            }
+            await authService.AuthenticateUserAsync(username, password);
         }
     }
 }
