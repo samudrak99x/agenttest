@@ -15,9 +15,14 @@ namespace OptimizedApp
     {
         public DbSet<User> Users { get; set; }
 
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseSqlServer("your_connection_string_here");
+            if (!options.IsConfigured)
+            {
+                options.UseSqlServer("your_connection_string_here");
+            }
         }
     }
 
@@ -45,7 +50,7 @@ namespace OptimizedApp
             }
 
             var user = await _context.Users.AsNoTracking()
-                              .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
+                              .SingleOrDefaultAsync(u => u.Username == username.Trim());
 
             if (user == null)
             {
@@ -65,8 +70,7 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            // Implement a secure way to compare hashed passwords
-            return hashedPassword == inputPassword;
+            return hashedPassword == inputPassword; // Replace with secure hash comparison
         }
 
         private void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
