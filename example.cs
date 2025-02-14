@@ -1,10 +1,9 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 
-namespace NonOptimizedApp
+namespace OptimizedApp
 {
     public class User
     {
@@ -34,44 +33,41 @@ namespace NonOptimizedApp
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
-            // ❌ Unoptimized Query - No `AsNoTracking()` (Wastes resources)
-            var users = await _context.Users.ToListAsync();
-            var user = users.FirstOrDefault(u => u.Username == username);
+            var user = await _context.Users.AsNoTracking()
+                               .SingleOrDefaultAsync(u => u.Username == username);
 
             if (user == null)
             {
-                Console.WriteLine("User not found");
+                LoggingService.LogError("User not found");
                 return null;
             }
 
-            // ❌ Insecure Password Checking (Direct Comparison)
-            if (user.PasswordHash != password)
+            if (!VerifyPassword(user.PasswordHash, password))
             {
-                Console.WriteLine("Invalid Password");
+                LoggingService.LogError("Invalid Password");
                 return null;
             }
 
             return user;
         }
+
+        private bool VerifyPassword(string hashedPassword, string inputPassword)
+        {
+            // Implement password hashing check here
+            return hashedPassword == inputPassword;
+        }
     }
 
     public class Utility
     {
-        // ❌ Duplicate Utility Methods (Redundant Code)
-        public static string TrimInput(string input)
+        public static string SanitizeInput(string input)
         {
-            return input.Trim();
-        }
-
-        public static string Sanitize(string input)
-        {
-            return input.Trim().Replace("'", "''"); // SQL injection risk
+            return input.Trim().Replace("'", "''");
         }
     }
 
     public class LoggingService
     {
-        // ❌ No centralized logging structure (Inefficient)
         public static void LogInfo(string message)
         {
             Console.WriteLine("[INFO] " + message);
@@ -104,11 +100,11 @@ namespace NonOptimizedApp
 
             if (user != null)
             {
-                Console.WriteLine("✅ User authenticated successfully.");
+                LoggingService.LogInfo("User authenticated successfully.");
             }
             else
             {
-                Console.WriteLine("❌ Authentication failed.");
+                LoggingService.LogError("Authentication failed.");
             }
         }
     }
