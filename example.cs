@@ -64,8 +64,7 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            // Replace with secure hash comparison
-            return hashedPassword == inputPassword;
+            return hashedPassword == inputPassword; // Placeholder for secure hash comparison
         }
 
         private static void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
@@ -82,6 +81,12 @@ namespace OptimizedApp
                 .Options;
 
             using var context = new AppDbContext(options);
+
+            if (!await context.Users.AnyAsync())
+            {
+                await InitializeUsersAsync(context);
+            }
+
             var authService = new AuthenticationService(context);
 
             Console.WriteLine("Enter Username:");
@@ -91,6 +96,12 @@ namespace OptimizedApp
             string password = Console.ReadLine();
 
             await authService.AuthenticateUserAsync(username, password);
+        }
+
+        private static async Task InitializeUsersAsync(AppDbContext context)
+        {
+            context.Users.Add(new User { Username = "testuser", PasswordHash = "testpassword" });
+            await context.SaveChangesAsync();
         }
     }
 }
