@@ -1,46 +1,19 @@
-To improve the efficiency and readability of the given C# code, we can make the following changes:
-
-1. Avoid using `ToList()` unnecessarily when we are not storing the result.
-2. Use `foreach` instead of `ForEach()` for better readability.
-3. Separate the logic of doubling the numbers into another method for clarity.
-
-Here's an optimized version of the code:
-
-```csharp
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 class ExampleProgram
 {
     static void Main(string[] args)
     {
-        List<int> numbers = new List<int> { 1, 2, 3, 4, 5 };
+        var numbers = new List<int> { 1, 2, 3, 4, 5 };
 
         Console.WriteLine("Original List:");
-        PrintList(numbers);
+        numbers.ForEach(Console.WriteLine);
 
         Console.WriteLine("Doubled List:");
-        var doubledNumbers = DoubleNumbers(numbers);
-        PrintList(doubledNumbers);
-    }
-
-    private static void PrintList(IEnumerable<int> numbers)
-    {
-        foreach (var number in numbers)
+        foreach(var doubled in numbers.Select(n => n * 2))
         {
-            Console.WriteLine(number);
+            Console.WriteLine(doubled);
         }
     }
-
-    private static IEnumerable<int> DoubleNumbers(IEnumerable<int> numbers)
-    {
-        return numbers.Select(n => n * 2);
-    }
 }
-```
-
-### Improvements Made:
-- **Separation of Concerns**: The display of numbers and the doubling logic are separated into different methods, improving both the readability and organization of the code.
-- **Avoid Unnecessary List Creation**: The `ToList()` method was removed as it was unnecessary when simply iterating over the sequence to print them. `Select` with `foreach` iterates efficiently without creating an intermediate list. 
-- **Readability**: Using `foreach` loops improves readability over `List.ForEach()` due to its explicit nature and familiarity within C#.
