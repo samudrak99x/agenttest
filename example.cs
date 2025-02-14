@@ -37,15 +37,9 @@ namespace OptimizedApp
 
         public async Task<User> AuthenticateUserAsync(string username, string password)
         {
-            if (string.IsNullOrWhiteSpace(username))
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                LogError("Invalid username");
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(password))
-            {
-                LogError("Invalid password");
+                LogError("Invalid username or password");
                 return null;
             }
 
@@ -70,7 +64,8 @@ namespace OptimizedApp
 
         private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            return hashedPassword == inputPassword; // Replace with secure hash comparison
+            // Replace with secure hash comparison
+            return hashedPassword == inputPassword;
         }
 
         private void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
@@ -90,7 +85,7 @@ namespace OptimizedApp
             var authService = new AuthenticationService(context);
 
             Console.WriteLine("Enter Username:");
-            string username = Console.ReadLine();
+            string username = Console.ReadLine()?.Trim();
 
             Console.WriteLine("Enter Password:");
             string password = Console.ReadLine();
