@@ -16,14 +16,6 @@ namespace OptimizedApp
         public DbSet<User> Users { get; set; }
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
-
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            if (!options.IsConfigured)
-            {
-                options.UseSqlServer("your_connection_string_here");
-            }
-        }
     }
 
     public class AuthenticationService
