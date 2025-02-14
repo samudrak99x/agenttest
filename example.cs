@@ -6,13 +6,16 @@ class Program
 {
     static void Main()
     {
-        List<int> numbers = new List<int> { 1, 2, 3, 4, 5 };
+        var numbers = new List<int> { 1, 2, 3, 4, 5 };
 
         Console.WriteLine("Original List:");
         numbers.ForEach(Console.WriteLine);
 
         Console.WriteLine("Doubled List:");
-        List<int> doubledNumbers = numbers.Select(n => n * 2).ToList();
-        doubledNumbers.ForEach(Console.WriteLine);
+        var doubledNumbers = numbers.Select(n => n * 2);
+        foreach (var number in doubledNumbers)
+        {
+            Console.WriteLine(number);
+        }
     }
 }
