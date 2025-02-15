@@ -73,12 +73,12 @@ namespace OptimizedApp
                 .UseInMemoryDatabase("TestDb")
                 .Options;
 
-            using (var context = new AppDbContext(options))
+            await using (var context = new AppDbContext(options))
             {
                 await InitializeUsersAsync(context);
             }
 
-            using (var context = new AppDbContext(options))
+            await using (var context = new AppDbContext(options))
             {
                 var authService = new AuthenticationService(context);
 
@@ -88,7 +88,10 @@ namespace OptimizedApp
                 Console.WriteLine("Enter Password:");
                 string password = Console.ReadLine()?.Trim() ?? string.Empty;
 
-                await authService.AuthenticateUserAsync(username, password);
+                if (await authService.AuthenticateUserAsync(username, password) is { } user)
+                {
+                    Console.WriteLine($"Welcome, {user.Username}!");
+                }
             }
         }
 
