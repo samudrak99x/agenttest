@@ -36,7 +36,7 @@ namespace OptimizedApp
             }
 
             var user = await _context.Users.AsNoTracking()
-                              .SingleOrDefaultAsync(u => u.Username == username.Trim());
+                              .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
 
             if (user is null)
             {
@@ -73,18 +73,23 @@ namespace OptimizedApp
                 .UseInMemoryDatabase("TestDb")
                 .Options;
 
-            using var context = new AppDbContext(options);
-            await InitializeUsersAsync(context);
+            using (var context = new AppDbContext(options))
+            {
+                await InitializeUsersAsync(context);
+            }
 
-            var authService = new AuthenticationService(context);
+            using (var context = new AppDbContext(options))
+            {
+                var authService = new AuthenticationService(context);
 
-            Console.WriteLine("Enter Username:");
-            string username = Console.ReadLine()?.Trim() ?? string.Empty;
+                Console.WriteLine("Enter Username:");
+                string username = Console.ReadLine()?.Trim() ?? string.Empty;
 
-            Console.WriteLine("Enter Password:");
-            string password = Console.ReadLine()?.Trim() ?? string.Empty;
+                Console.WriteLine("Enter Password:");
+                string password = Console.ReadLine()?.Trim() ?? string.Empty;
 
-            await authService.AuthenticateUserAsync(username, password);
+                await authService.AuthenticateUserAsync(username, password);
+            }
         }
 
         private static async Task InitializeUsersAsync(AppDbContext context)
