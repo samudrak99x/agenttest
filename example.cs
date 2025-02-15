@@ -74,11 +74,7 @@ namespace OptimizedApp
                 .Options;
 
             using var context = new AppDbContext(options);
-
-            if (!await context.Users.AnyAsync())
-            {
-                await InitializeUsersAsync(context);
-            }
+            await InitializeUsersAsync(context);
 
             var authService = new AuthenticationService(context);
 
@@ -93,8 +89,11 @@ namespace OptimizedApp
 
         private static async Task InitializeUsersAsync(AppDbContext context)
         {
-            context.Users.Add(new User { Username = "testuser", PasswordHash = "testpassword" });
-            await context.SaveChangesAsync();
+            if (!await context.Users.AnyAsync())
+            {
+                context.Users.Add(new User { Username = "testuser", PasswordHash = "testpassword" });
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
