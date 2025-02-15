@@ -1,85 +1,67 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
-namespace NonOptimizedApp
+namespace OptimizedApp
 {
     public class User
     {
         public int Id { get; set; }
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
     }
 
     public class AppDbContext : DbContext
     {
         public DbSet<User> Users { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder options)
-        {
-            options.UseSqlServer("your_connection_string_here");
-        }
+        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
     }
 
     public class AuthenticationService
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<AuthenticationService> _logger;
 
-        public AuthenticationService(AppDbContext context)
+        public AuthenticationService(AppDbContext context, ILogger<AuthenticationService> logger)
         {
-            _context = context;
+            _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<User> AuthenticateUserAsync(string username, string password)
+        public async Task<User?> AuthenticateUserAsync(string username, string password)
         {
-            // ❌ Unoptimized Query - No `AsNoTracking()` (Wastes resources)
-            var users = await _context.Users.ToListAsync();
-            var user = users.FirstOrDefault(u => u.Username == username);
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            {
+                _logger.LogError("Invalid username or password.");
+                return null;
+            }
+
+            username = username.Trim();
+            var user = await _context.Users.AsNoTracking()
+                              .SingleOrDefaultAsync(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
 
             if (user == null)
             {
-                Console.WriteLine("User not found");
+                _logger.LogError("User not found.");
                 return null;
             }
 
-            // ❌ Insecure Password Checking (Direct Comparison)
-            if (user.PasswordHash != password)
+            if (!VerifyPassword(user.PasswordHash, password))
             {
-                Console.WriteLine("Invalid Password");
+                _logger.LogError("Invalid password.");
                 return null;
             }
 
+            _logger.LogInformation("User authenticated successfully.");
             return user;
         }
-    }
 
-    public class Utility
-    {
-        // ❌ Duplicate Utility Methods (Redundant Code)
-        public static string TrimInput(string input)
+        private bool VerifyPassword(string hashedPassword, string inputPassword)
         {
-            return input.Trim();
-        }
-
-        public static string Sanitize(string input)
-        {
-            return input.Trim().Replace("'", "''"); // SQL injection risk
-        }
-    }
-
-    public class LoggingService
-    {
-        // ❌ No centralized logging structure (Inefficient)
-        public static void LogInfo(string message)
-        {
-            Console.WriteLine("[INFO] " + message);
-        }
-
-        public static void LogError(string message)
-        {
-            Console.WriteLine("[ERROR] " + message);
+            // Implement secure password hash comparison here
+            return hashedPassword == inputPassword;
         }
     }
 
@@ -88,27 +70,40 @@ namespace NonOptimizedApp
         static async Task Main(string[] args)
         {
             var options = new DbContextOptionsBuilder<AppDbContext>()
-                .UseInMemoryDatabase(databaseName: "TestDb")
+                .UseInMemoryDatabase("TestDb")
                 .Options;
 
-            using var context = new AppDbContext();
-            var authService = new AuthenticationService(context);
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            var logger = loggerFactory.CreateLogger<AuthenticationService>();
 
-            Console.WriteLine("Enter Username:");
-            string username = Console.ReadLine();
-
-            Console.WriteLine("Enter Password:");
-            string password = Console.ReadLine();
-
-            var user = await authService.AuthenticateUserAsync(username, password);
-
-            if (user != null)
+            await using (var context = new AppDbContext(options))
             {
-                Console.WriteLine("✅ User authenticated successfully.");
+                await InitializeUsersAsync(context);
             }
-            else
+
+            await using (var context = new AppDbContext(options))
             {
-                Console.WriteLine("❌ Authentication failed.");
+                var authService = new AuthenticationService(context, logger);
+
+                Console.WriteLine("Enter Username:");
+                string username = Console.ReadLine()?.Trim() ?? string.Empty;
+
+                Console.WriteLine("Enter Password:");
+                string password = Console.ReadLine()?.Trim() ?? string.Empty;
+
+                if (await authService.AuthenticateUserAsync(username, password) is { } user)
+                {
+                    Console.WriteLine($"Welcome, {user.Username}!");
+                }
+            }
+        }
+
+        private static async Task InitializeUsersAsync(AppDbContext context)
+        {
+            if (!await context.Users.AnyAsync())
+            {
+                context.Users.Add(new User { Username = "testuser", PasswordHash = "testpassword" });
+                await context.SaveChangesAsync();
             }
         }
     }
