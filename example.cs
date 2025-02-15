@@ -1,14 +1,15 @@
 using System;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace OptimizedApp
 {
     public class User
     {
         public int Id { get; set; }
-        public string Username { get; set; }
-        public string PasswordHash { get; set; }
+        public string Username { get; set; } = string.Empty;
+        public string PasswordHash { get; set; } = string.Empty;
     }
 
     public class AppDbContext : DbContext
@@ -21,36 +22,39 @@ namespace OptimizedApp
     public class AuthenticationService
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<AuthenticationService> _logger;
 
-        public AuthenticationService(AppDbContext context)
+        public AuthenticationService(AppDbContext context, ILogger<AuthenticationService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<User> AuthenticateUserAsync(string username, string password)
+        public async Task<User?> AuthenticateUserAsync(string username, string password)
         {
             if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
             {
-                LogError("Invalid username or password.");
+                _logger.LogError("Invalid username or password.");
                 return null;
             }
 
+            username = username.Trim();
             var user = await _context.Users.AsNoTracking()
-                              .SingleOrDefaultAsync(u => u.Username.Equals(username.Trim(), StringComparison.OrdinalIgnoreCase));
+                              .SingleOrDefaultAsync(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
 
-            if (user is null)
+            if (user == null)
             {
-                LogError("User not found.");
+                _logger.LogError("User not found.");
                 return null;
             }
 
             if (!VerifyPassword(user.PasswordHash, password))
             {
-                LogError("Invalid password.");
+                _logger.LogError("Invalid password.");
                 return null;
             }
 
-            LogInfo("User authenticated successfully.");
+            _logger.LogInformation("User authenticated successfully.");
             return user;
         }
 
@@ -59,10 +63,6 @@ namespace OptimizedApp
             // Implement secure password hash comparison here
             return hashedPassword == inputPassword;
         }
-
-        private static void LogInfo(string message) => Console.WriteLine($"[INFO] {message}");
-
-        private static void LogError(string message) => Console.WriteLine($"[ERROR] {message}");
     }
 
     class Program
@@ -73,6 +73,9 @@ namespace OptimizedApp
                 .UseInMemoryDatabase("TestDb")
                 .Options;
 
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddConsole());
+            var logger = loggerFactory.CreateLogger<AuthenticationService>();
+
             await using (var context = new AppDbContext(options))
             {
                 await InitializeUsersAsync(context);
@@ -80,7 +83,7 @@ namespace OptimizedApp
 
             await using (var context = new AppDbContext(options))
             {
-                var authService = new AuthenticationService(context);
+                var authService = new AuthenticationService(context, logger);
 
                 Console.WriteLine("Enter Username:");
                 string username = Console.ReadLine()?.Trim() ?? string.Empty;
