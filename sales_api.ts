@@ -2,11 +2,25 @@ import express from "express";
 import mysql from "mysql";
 import { body, validationResult, query, param } from "express-validator";
 import dotenv from "dotenv";
+import winston from "winston";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// Configure logging
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'app.log' })
+    ]
+});
 
 // Database connection
 const db = mysql.createConnection({
@@ -18,9 +32,9 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) {
-        console.error("Database connection failed", err);
+        logger.error("Database connection failed", { error: err });
     } else {
-        console.log("Connected to database");
+        logger.info("Connected to database");
     }
 });
 
@@ -43,13 +57,13 @@ app.post("/sale", saleValidationRules, async (req, res) => {
 
         db.query(sql, [customer, amount], (err, result) => {
             if (err) {
-                console.error("Error inserting sale", err);
+                logger.error("Error inserting sale", { error: err });
                 return res.status(500).send("Error inserting sale");
             }
             res.status(201).send("Sale added");
         });
     } catch (error) {
-        console.error("Unexpected error", error);
+        logger.error("Unexpected error", { error });
         res.status(500).send("Unexpected error occurred");
     }
 });
@@ -71,13 +85,13 @@ app.get("/sales", [
 
         db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [pageSize, offset], (err, results) => {
             if (err) {
-                console.error("Error fetching sales", err);
+                logger.error("Error fetching sales", { error: err });
                 return res.status(500).send("Error fetching sales");
             }
             res.json(results);
         });
     } catch (error) {
-        console.error("Unexpected error", error);
+        logger.error("Unexpected error", { error });
         res.status(500).send("Unexpected error occurred");
     }
 });
@@ -97,18 +111,18 @@ app.delete("/sale/:id", [
 
         db.query(sql, [saleId], (err, result) => {
             if (err) {
-                console.error("Error deleting sale", err);
+                logger.error("Error deleting sale", { error: err });
                 return res.status(500).send("Error deleting sale");
             }
             res.send("Sale deleted");
         });
     } catch (error) {
-        console.error("Unexpected error", error);
+        logger.error("Unexpected error", { error });
         res.status(500).send("Unexpected error occurred");
     }
 });
 
 // Start server
 app.listen(3000, () => {
-    console.log("Server running on port 3000");
+    logger.info("Server running on port 3000");
 });
