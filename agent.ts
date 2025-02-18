@@ -15,46 +15,37 @@ const agent = agentBuilder.buildAgent();
  * @returns An object containing the status of each file processed.
  */
 export const agentController = async (message: string, repoPath: string, filePaths: string[]) => {
-    try {
-        const changedFiles = []; // Array to store the status of each file processed
+    const changedFiles = []; // Array to store the status of each file processed
 
-        // Iterate over each file path provided
-        for (const filePath of filePaths) {
-            try {
-                // Read the content of the code file
-                const codeContent = FileHandler.readCodeFile(repoPath, filePath);
+    for (const filePath of filePaths) {
+        try {
+            // Read the content of the code file
+            const codeContent = FileHandler.readCodeFile(repoPath, filePath);
 
-                // Invoke the agent with the message and code content
-                const agentResponse = await agent.agent.invoke({
-                    messages: [
-                        new SystemMessage(message),
-                        new SystemMessage(`Code: ${codeContent}`)
-                    ]
-                });
+            // Invoke the agent with the message and code content
+            const agentResponse = await agent.agent.invoke({
+                messages: [
+                    new SystemMessage(message),
+                    new SystemMessage(`Code: ${codeContent}`)
+                ]
+            });
 
-                // Extract the last message from the agent's response
-                const agentMessage = agentResponse.messages[agentResponse.messages.length - 1].content;
+            // Extract the last message from the agent's response
+            const agentMessage = agentResponse.messages[agentResponse.messages.length - 1].content;
 
-                // Parse the agent's response to get the modified code
-                const parsedCode = Utility.parseAgentCodeResponse(agentMessage);
+            // Parse the agent's response to get the modified code
+            const parsedCode = Utility.parseAgentCodeResponse(agentMessage);
 
-                // Write the modified code back to the file
-                await FileHandler.writeCodeFile(repoPath, filePath, parsedCode);
-                changedFiles.push({ filePath, message: "Code written successfully." });
+            // Write the modified code back to the file
+            await FileHandler.writeCodeFile(repoPath, filePath, parsedCode);
+            changedFiles.push({ filePath, message: "Code written successfully." });
 
-            } catch (fileError) {
-                // Handle errors during file reading or writing
-                console.error(`Error processing file ${filePath}:`, fileError);
-                changedFiles.push({ filePath, message: "Error processing file." });
-            }
+        } catch (error) {
+            // Handle errors during file reading or writing
+            console.error(`Error processing file ${filePath}:`, error);
+            changedFiles.push({ filePath, message: "Error processing file." });
         }
-
-        // Return the status of each file processed
-        return { changedFiles };
-
-    } catch (agentError) {
-        // Handle errors during the agent invocation process
-        console.error("Agent Controller Error:", agentError);
-        return { error: "Error invoking the agent." };
     }
-}
+
+    return { changedFiles };
+};
