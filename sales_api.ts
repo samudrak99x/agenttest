@@ -1,10 +1,11 @@
 import express from "express";
 import mysql from "mysql";
+import { body, validationResult, query, param } from "express-validator";
 
 const app = express();
 app.use(express.json());
 
-// Database connection (🚨 Hardcoded credentials)
+// Database connection
 const db = mysql.createConnection({
     host: "localhost",
     user: "root",
@@ -20,8 +21,19 @@ db.connect(err => {
     }
 });
 
-// 🚨 Refactored to use parameterized queries to prevent SQL injection
-app.post("/sale", (req, res) => {
+// Validation rules
+const saleValidationRules = [
+    body('customer').isString().withMessage('Customer name must be a string').isLength({ min: 1 }).withMessage('Customer name cannot be empty'),
+    body('amount').isFloat({ gt: 0 }).withMessage('Amount must be a positive number')
+];
+
+// Add a new sale
+app.post("/sale", saleValidationRules, (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const { customer, amount } = req.body;
     const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
 
@@ -34,8 +46,16 @@ app.post("/sale", (req, res) => {
     });
 });
 
-// 🚨 Added error handling and pagination
-app.get("/sales", (req, res) => {
+// Fetch sales with pagination
+app.get("/sales", [
+    query('limit').optional().isInt({ min: 1 }).withMessage('Limit must be a positive integer'),
+    query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be a non-negative integer')
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const limit = parseInt(req.query.limit as string) || 10;
     const offset = parseInt(req.query.offset as string) || 0;
 
@@ -48,8 +68,15 @@ app.get("/sales", (req, res) => {
     });
 });
 
-// 🚨 Refactored to use parameterized queries and added error handling
-app.delete("/sale/:id", (req, res) => {
+// Delete a sale
+app.delete("/sale/:id", [
+    param('id').isInt({ gt: 0 }).withMessage('Sale ID must be a positive integer')
+], (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
     const saleId = parseInt(req.params.id);
     const sql = "DELETE FROM sales WHERE id = ?";
 
