@@ -2,6 +2,7 @@ import { AgentBuilder } from "../services/agentBuilder";
 import { SystemMessage } from "@langchain/core/messages";
 import { Utility } from "../utils/utility";
 import { FileHandler } from "../utils/fileHandler";
+import { Logger } from "../utils/logger"; // Assuming a logger utility is available
 
 // Initialize the agent builder and build the agent once during startup
 const agentBuilder = new AgentBuilder();
@@ -39,10 +40,11 @@ export const agentController = async (message: string, repoPath: string, filePat
             // Write the modified code back to the file
             await FileHandler.writeCodeFile(repoPath, filePath, modifiedCode);
             fileProcessingResults.push({ filePath, message: "Code written successfully." });
+            Logger.info(`File processed successfully: ${filePath}`);
 
         } catch (error) {
             // Handle errors during file reading or writing
-            console.error(`Error processing file ${filePath}:`, error);
+            Logger.error(`Error processing file ${filePath}: ${error.message}`);
             fileProcessingResults.push({ filePath, message: "Error processing file." });
         }
     }
