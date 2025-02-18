@@ -15,7 +15,7 @@ const agent = agentBuilder.buildAgent();
  * @returns An object containing the status of each file processed.
  */
 export const agentController = async (message: string, repoPath: string, filePaths: string[]) => {
-    const changedFiles = []; // Array to store the status of each file processed
+    const fileProcessingResults = []; // Array to store the status of each file processed
 
     for (const filePath of filePaths) {
         try {
@@ -34,18 +34,18 @@ export const agentController = async (message: string, repoPath: string, filePat
             const agentMessage = agentResponse.messages[agentResponse.messages.length - 1].content;
 
             // Parse the agent's response to get the modified code
-            const parsedCode = Utility.parseAgentCodeResponse(agentMessage);
+            const modifiedCode = Utility.parseAgentCodeResponse(agentMessage);
 
             // Write the modified code back to the file
-            await FileHandler.writeCodeFile(repoPath, filePath, parsedCode);
-            changedFiles.push({ filePath, message: "Code written successfully." });
+            await FileHandler.writeCodeFile(repoPath, filePath, modifiedCode);
+            fileProcessingResults.push({ filePath, message: "Code written successfully." });
 
         } catch (error) {
             // Handle errors during file reading or writing
             console.error(`Error processing file ${filePath}:`, error);
-            changedFiles.push({ filePath, message: "Error processing file." });
+            fileProcessingResults.push({ filePath, message: "Error processing file." });
         }
     }
 
-    return { changedFiles };
+    return { fileProcessingResults };
 };
