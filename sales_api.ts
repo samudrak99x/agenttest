@@ -56,8 +56,8 @@ app.post("/sale", saleValidationRules, async (req, res) => {
 
 // Fetch sales with pagination
 app.get("/sales", [
-    query('limit').optional().isInt({ min: 1 }).withMessage('Limit must be a positive integer'),
-    query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be a non-negative integer')
+    query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
+    query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be a positive integer')
 ], async (req, res) => {
     try {
         const errors = validationResult(req);
@@ -65,10 +65,11 @@ app.get("/sales", [
             return res.status(400).json({ errors: errors.array() });
         }
 
-        const limit = parseInt(req.query.limit as string) || 10;
-        const offset = parseInt(req.query.offset as string) || 0;
+        const page = parseInt(req.query.page as string) || 1;
+        const pageSize = parseInt(req.query.pageSize as string) || 10;
+        const offset = (page - 1) * pageSize;
 
-        db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [limit, offset], (err, results) => {
+        db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [pageSize, offset], (err, results) => {
             if (err) {
                 console.error("Error fetching sales", err);
                 return res.status(500).send("Error fetching sales");
