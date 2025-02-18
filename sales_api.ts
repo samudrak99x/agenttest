@@ -2,11 +2,26 @@ import express from "express";
 import mysql from "mysql2/promise";
 import dotenv from "dotenv";
 import { body, validationResult } from "express-validator";
+import winston from "winston";
+import morgan from "morgan";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// Set up Winston logger
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.json(),
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'combined.log' })
+    ]
+});
+
+// Use Morgan for HTTP request logging
+app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
 const dbPool = mysql.createPool({
     host: process.env.DB_HOST,
@@ -36,7 +51,7 @@ app.post("/sale",
             const [result] = await dbPool.execute(sql, [customer, amount]);
             res.status(201).send("Sale added successfully");
         } catch (err) {
-            console.error("Error inserting sale:", err);
+            logger.error("Error inserting sale:", err);
             res.status(500).send("Error inserting sale");
         }
     }
@@ -49,12 +64,12 @@ app.get("/sales", async (req, res) => {
         const [results] = await dbPool.execute(sql);
         res.json(results);
     } catch (err) {
-        console.error("Error fetching sales:", err);
+        logger.error("Error fetching sales:", err);
         res.status(500).send("Error fetching sales");
     }
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });
