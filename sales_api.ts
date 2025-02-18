@@ -38,13 +38,13 @@ db.connect(err => {
     }
 });
 
-// Validation rules
+// Validation rules for adding a sale
 const saleValidationRules = [
     body('customer').isString().withMessage('Customer name must be a string').notEmpty().withMessage('Customer name cannot be empty'),
     body('amount').isFloat({ gt: 0 }).withMessage('Amount must be a positive number')
 ];
 
-// Add a new sale
+// Endpoint to add a new sale
 app.post("/sale", saleValidationRules, (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -63,7 +63,7 @@ app.post("/sale", saleValidationRules, (req, res) => {
     });
 });
 
-// Fetch sales with pagination
+// Endpoint to fetch sales with pagination
 app.get("/sales", [
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('pageSize').optional().isInt({ min: 1 }).withMessage('Page size must be a positive integer')
@@ -86,7 +86,7 @@ app.get("/sales", [
     });
 });
 
-// Delete a sale
+// Endpoint to delete a sale
 app.delete("/sale/:id", [
     param('id').isInt({ gt: 0 }).withMessage('Sale ID must be a positive integer')
 ], (req, res) => {
@@ -112,3 +112,59 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
 });
+
+2. **Install dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables:**
+
+   Create a `.env` file in the root directory and add the following:
+
+   ```plaintext
+   DB_HOST=<your-database-host>
+   DB_USER=<your-database-user>
+   DB_PASSWORD=<your-database-password>
+   DB_NAME=<your-database-name>
+   PORT=<your-port-number>
+   ```
+
+4. **Start the server:**
+
+   ```bash
+   npm start
+   ```
+
+## API Endpoints
+
+- **POST /sale**
+
+  Add a new sale.
+
+  **Request Body:**
+
+  ```json
+  {
+    "customer": "Customer Name",
+    "amount": 100.0
+  }
+  ```
+
+- **GET /sales**
+
+  Fetch sales with optional pagination.
+
+  **Query Parameters:**
+
+  - `page`: Page number (optional, default is 1)
+  - `pageSize`: Number of records per page (optional, default is 10)
+
+- **DELETE /sale/:id**
+
+  Delete a sale by ID.
+
+  **Path Parameters:**
+
+  - `id`: Sale ID (must be a positive integer)
