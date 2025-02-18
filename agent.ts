@@ -29,7 +29,7 @@ export const agentController = async (message: string, repoPath: string, filePat
                 ]
             });
 
-            const agentMessage = agentResponse.messages[agentResponse.messages.length - 1].content;
+            const agentMessage = agentResponse.messages.at(-1)?.content ?? '';
             const modifiedCode = Utility.parseAgentCodeResponse(agentMessage);
 
             await FileHandler.writeCodeFile(repoPath, filePath, modifiedCode);
@@ -37,7 +37,7 @@ export const agentController = async (message: string, repoPath: string, filePat
             Logger.info(`File processed successfully: ${filePath}`);
 
         } catch (error) {
-            Logger.error(`Error processing file ${filePath}: ${error.message}`);
+            Logger.error(`Error processing file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
             fileProcessingResults.push({ filePath, message: "Error processing file." });
         }
     }
