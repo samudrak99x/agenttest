@@ -1,16 +1,19 @@
 import express from "express";
 import mysql from "mysql";
 import { body, validationResult, query, param } from "express-validator";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(express.json());
 
 // Database connection
 const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "salesdb"
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 db.connect(err => {
@@ -93,3 +96,7 @@ app.delete("/sale/:id", [
 app.listen(3000, () => {
     console.log("Server running on port 3000");
 });
+DB_HOST=localhost
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=salesdb
