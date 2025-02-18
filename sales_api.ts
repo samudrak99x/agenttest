@@ -23,16 +23,16 @@ const logger = winston.createLogger({
 });
 
 // Database connection
-const db = mysql.createConnection({
+const databaseConnection = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
     database: process.env.DB_NAME
 });
 
-db.connect(err => {
-    if (err) {
-        logger.error("Database connection failed", { error: err });
+databaseConnection.connect(error => {
+    if (error) {
+        logger.error("Database connection failed", { error });
     } else {
         logger.info("Connected to database");
     }
@@ -52,11 +52,11 @@ app.post("/sale", saleValidationRules, (req, res) => {
     }
 
     const { customer, amount } = req.body;
-    const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
+    const insertSaleQuery = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
 
-    db.query(sql, [customer, amount], (err) => {
-        if (err) {
-            logger.error("Error inserting sale", { error: err });
+    databaseConnection.query(insertSaleQuery, [customer, amount], (error) => {
+        if (error) {
+            logger.error("Error inserting sale", { error });
             return res.status(500).send("Error inserting sale");
         }
         res.status(201).send("Sale added");
@@ -77,9 +77,10 @@ app.get("/sales", [
     const pageSize = parseInt(req.query.pageSize as string) || 10;
     const offset = (page - 1) * pageSize;
 
-    db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [pageSize, offset], (err, results) => {
-        if (err) {
-            logger.error("Error fetching sales", { error: err });
+    const fetchSalesQuery = "SELECT * FROM sales LIMIT ? OFFSET ?";
+    databaseConnection.query(fetchSalesQuery, [pageSize, offset], (error, results) => {
+        if (error) {
+            logger.error("Error fetching sales", { error });
             return res.status(500).send("Error fetching sales");
         }
         res.json(results);
@@ -96,11 +97,11 @@ app.delete("/sale/:id", [
     }
 
     const saleId = parseInt(req.params.id);
-    const sql = "DELETE FROM sales WHERE id = ?";
+    const deleteSaleQuery = "DELETE FROM sales WHERE id = ?";
 
-    db.query(sql, [saleId], (err) => {
-        if (err) {
-            logger.error("Error deleting sale", { error: err });
+    databaseConnection.query(deleteSaleQuery, [saleId], (error) => {
+        if (error) {
+            logger.error("Error deleting sale", { error });
             return res.status(500).send("Error deleting sale");
         }
         res.send("Sale deleted");
@@ -112,59 +113,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
 });
-
-2. **Install dependencies:**
-
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment variables:**
-
-   Create a `.env` file in the root directory and add the following:
-
-   ```plaintext
-   DB_HOST=<your-database-host>
-   DB_USER=<your-database-user>
-   DB_PASSWORD=<your-database-password>
-   DB_NAME=<your-database-name>
-   PORT=<your-port-number>
-   ```
-
-4. **Start the server:**
-
-   ```bash
-   npm start
-   ```
-
-## API Endpoints
-
-- **POST /sale**
-
-  Add a new sale.
-
-  **Request Body:**
-
-  ```json
-  {
-    "customer": "Customer Name",
-    "amount": 100.0
-  }
-  ```
-
-- **GET /sales**
-
-  Fetch sales with optional pagination.
-
-  **Query Parameters:**
-
-  - `page`: Page number (optional, default is 1)
-  - `pageSize`: Number of records per page (optional, default is 10)
-
-- **DELETE /sale/:id**
-
-  Delete a sale by ID.
-
-  **Path Parameters:**
-
-  - `id`: Sale ID (must be a positive integer)
