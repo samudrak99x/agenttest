@@ -13,30 +13,32 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) {
-        console.log("DB not connected");
+        console.error("DB not connected", err);
     }
 });
 
-// Add a new sale (Vulnerable to SQL Injection)
+// Add a new sale with parameterized query to prevent SQL Injection
 app.post("/sale", (req, res) => {
     const { customer, amount } = req.body;
-    const sql = `INSERT INTO sales (customer, amount) VALUES ('${customer}', '${amount}')`;
+    const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
 
-    db.query(sql, (err, result) => {
+    db.query(sql, [customer, amount], (err, result) => {
         if (err) {
-            res.send("Error inserting sale");
+            console.error("Error inserting sale", err);
+            return res.status(500).send("Error inserting sale");
         }
         res.send("Sale added");
     });
 });
 
-// Get all sales (No error handling)
+// Get all sales with error handling
 app.get("/sales", (req, res) => {
     db.query("SELECT * FROM sales", (err, results) => {
         if (err) {
-            res.send("Error fetching sales");
+            console.error("Error fetching sales", err);
+            return res.status(500).send("Error fetching sales");
         }
-        res.send(results);
+        res.json(results);
     });
 });
 
