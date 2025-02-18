@@ -10,7 +10,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// Set up Winston logger
+// Set up Winston logger for logging application events
 const logger = winston.createLogger({
     level: 'info',
     format: winston.format.json(),
@@ -20,9 +20,10 @@ const logger = winston.createLogger({
     ]
 });
 
-// Use Morgan for HTTP request logging
+// Use Morgan for HTTP request logging, integrated with Winston
 app.use(morgan('combined', { stream: { write: message => logger.info(message.trim()) } }));
 
+// Create a MySQL connection pool
 const dbPool = mysql.createPool({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
@@ -33,6 +34,7 @@ const dbPool = mysql.createPool({
     queueLimit: 0
 });
 
+// Endpoint to add a new sale
 app.post("/sale", 
     [
         body('customer').isString().withMessage('Customer must be a string'),
@@ -57,6 +59,7 @@ app.post("/sale",
     }
 );
 
+// Endpoint to retrieve all sales
 app.get("/sales", async (req, res) => {
     const sql = "SELECT * FROM sales";
 
@@ -69,6 +72,7 @@ app.get("/sales", async (req, res) => {
     }
 });
 
+// Start the server on the specified port
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);
