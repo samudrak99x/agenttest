@@ -31,72 +31,83 @@ const saleValidationRules = [
 ];
 
 // Add a new sale
-app.post("/sale", saleValidationRules, (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const { customer, amount } = req.body;
-    const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
-
-    db.query(sql, [customer, amount], (err, result) => {
-        if (err) {
-            res.status(500).send("Error inserting sale");
-        } else {
-            res.status(201).send("Sale added");
+app.post("/sale", saleValidationRules, async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
-    });
+
+        const { customer, amount } = req.body;
+        const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
+
+        db.query(sql, [customer, amount], (err, result) => {
+            if (err) {
+                console.error("Error inserting sale", err);
+                return res.status(500).send("Error inserting sale");
+            }
+            res.status(201).send("Sale added");
+        });
+    } catch (error) {
+        console.error("Unexpected error", error);
+        res.status(500).send("Unexpected error occurred");
+    }
 });
 
 // Fetch sales with pagination
 app.get("/sales", [
     query('limit').optional().isInt({ min: 1 }).withMessage('Limit must be a positive integer'),
     query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be a non-negative integer')
-], (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const limit = parseInt(req.query.limit as string) || 10;
-    const offset = parseInt(req.query.offset as string) || 0;
-
-    db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [limit, offset], (err, results) => {
-        if (err) {
-            res.status(500).send("Error fetching sales");
-        } else {
-            res.json(results);
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
-    });
+
+        const limit = parseInt(req.query.limit as string) || 10;
+        const offset = parseInt(req.query.offset as string) || 0;
+
+        db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [limit, offset], (err, results) => {
+            if (err) {
+                console.error("Error fetching sales", err);
+                return res.status(500).send("Error fetching sales");
+            }
+            res.json(results);
+        });
+    } catch (error) {
+        console.error("Unexpected error", error);
+        res.status(500).send("Unexpected error occurred");
+    }
 });
 
 // Delete a sale
 app.delete("/sale/:id", [
     param('id').isInt({ gt: 0 }).withMessage('Sale ID must be a positive integer')
-], (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
-    }
-
-    const saleId = parseInt(req.params.id);
-    const sql = "DELETE FROM sales WHERE id = ?";
-
-    db.query(sql, [saleId], (err, result) => {
-        if (err) {
-            res.status(500).send("Error deleting sale");
-        } else {
-            res.send("Sale deleted");
+], async (req, res) => {
+    try {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
         }
-    });
+
+        const saleId = parseInt(req.params.id);
+        const sql = "DELETE FROM sales WHERE id = ?";
+
+        db.query(sql, [saleId], (err, result) => {
+            if (err) {
+                console.error("Error deleting sale", err);
+                return res.status(500).send("Error deleting sale");
+            }
+            res.send("Sale deleted");
+        });
+    } catch (error) {
+        console.error("Unexpected error", error);
+        res.status(500).send("Unexpected error occurred");
+    }
 });
 
 // Start server
 app.listen(3000, () => {
     console.log("Server running on port 3000");
 });
-DB_HOST=localhost
-DB_USER=root
-DB_PASSWORD=
-DB_NAME=salesdb
