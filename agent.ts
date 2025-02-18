@@ -37,7 +37,8 @@ export const agentController = async (message: string, repoPath: string, filePat
             Logger.info(`File processed successfully: ${filePath}`);
 
         } catch (error) {
-            Logger.error(`Error processing file ${filePath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+            Logger.error(`Error processing file ${filePath}: ${errorMessage}`);
             fileProcessingResults.push({ filePath, message: "Error processing file." });
         }
     }
