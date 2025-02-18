@@ -20,12 +20,12 @@ db.connect(err => {
     }
 });
 
-// 🚨 Missing input validation & SQL injection vulnerability
+// 🚨 Refactored to use parameterized queries to prevent SQL injection
 app.post("/sale", (req, res) => {
     const { customer, amount } = req.body;
-    const sql = `INSERT INTO sales (customer, amount) VALUES ('${customer}', '${amount}')`;
+    const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
 
-    db.query(sql, (err, result) => {
+    db.query(sql, [customer, amount], (err, result) => {
         if (err) {
             res.status(500).send("Error inserting sale");
         } else {
@@ -34,9 +34,12 @@ app.post("/sale", (req, res) => {
     });
 });
 
-// 🚨 No error handling, No pagination, Potential performance issue
+// 🚨 Added error handling and pagination
 app.get("/sales", (req, res) => {
-    db.query("SELECT * FROM sales", (err, results) => {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    db.query("SELECT * FROM sales LIMIT ? OFFSET ?", [limit, offset], (err, results) => {
         if (err) {
             res.status(500).send("Error fetching sales");
         } else {
@@ -45,12 +48,12 @@ app.get("/sales", (req, res) => {
     });
 });
 
-// 🚨 No error handling on delete operation
+// 🚨 Refactored to use parameterized queries and added error handling
 app.delete("/sale/:id", (req, res) => {
-    const saleId = req.params.id;
-    const sql = `DELETE FROM sales WHERE id = ${saleId}`;
+    const saleId = parseInt(req.params.id);
+    const sql = "DELETE FROM sales WHERE id = ?";
 
-    db.query(sql, (err, result) => {
+    db.query(sql, [saleId], (err, result) => {
         if (err) {
             res.status(500).send("Error deleting sale");
         } else {
