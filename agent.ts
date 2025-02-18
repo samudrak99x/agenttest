@@ -2,7 +2,7 @@ import { AgentBuilder } from "../services/agentBuilder";
 import { SystemMessage } from "@langchain/core/messages";
 import { Utility } from "../utils/utility";
 import { FileHandler } from "../utils/fileHandler";
-import { Logger } from "../utils/logger"; // Assuming a logger utility is available
+import { Logger } from "../utils/logger";
 
 // Initialize the agent builder and build the agent once during startup
 const agentBuilder = new AgentBuilder();
