@@ -2,11 +2,25 @@ import express from "express";
 import mysql from "mysql";
 import dotenv from "dotenv";
 import { body, query, param, validationResult } from "express-validator";
+import winston from "winston";
 
 dotenv.config();
 
 const app = express();
 app.use(express.json());
+
+// Configure Winston logger
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        new winston.transports.Console(),
+        new winston.transports.File({ filename: 'error.log', level: 'error' })
+    ]
+});
 
 // Database connection using environment variables
 const db = mysql.createConnection({
@@ -18,9 +32,9 @@ const db = mysql.createConnection({
 
 db.connect(err => {
     if (err) {
-        console.error("Database connection failed", err);
+        logger.error("Database connection failed", { error: err });
     } else {
-        console.log("Connected to database");
+        logger.info("Connected to database");
     }
 });
 
@@ -44,7 +58,7 @@ app.post("/sale", validateSaleInput, (req, res) => {
     const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
     db.query(sql, [customer, amount], (err, result) => {
         if (err) {
-            console.error("Error inserting sale", err);
+            logger.error("Error inserting sale", { error: err });
             return res.status(500).send("Error inserting sale");
         }
         res.status(201).send("Sale added");
@@ -69,7 +83,7 @@ app.get("/sales", [
     const sql = "SELECT * FROM sales LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, results) => {
         if (err) {
-            console.error("Error fetching sales", err);
+            logger.error("Error fetching sales", { error: err });
             return res.status(500).send("Error fetching sales");
         }
         res.json(results);
@@ -92,7 +106,7 @@ app.delete("/sale/:id", [
     const sql = "DELETE FROM sales WHERE id = ?";
     db.query(sql, [saleId], (err, result) => {
         if (err) {
-            console.error("Error deleting sale", err);
+            logger.error("Error deleting sale", { error: err });
             return res.status(500).send("Error deleting sale");
         }
         res.send("Sale deleted");
@@ -102,5 +116,5 @@ app.delete("/sale/:id", [
 // Start server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });
