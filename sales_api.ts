@@ -1,6 +1,7 @@
 import express from "express";
 import mysql from "mysql";
 import dotenv from "dotenv";
+import { body, query, param, validationResult } from "express-validator";
 
 dotenv.config();
 
@@ -23,12 +24,22 @@ db.connect(err => {
     }
 });
 
-// Input validation and SQL injection prevention
-app.post("/sale", (req, res) => {
-    const { customer, amount } = req.body;
-    if (!customer || !amount) {
-        return res.status(400).send("Invalid input");
+// Middleware for input validation
+const validateSaleInput = [
+    body('customer').notEmpty().withMessage('Customer is required'),
+    body('amount').isNumeric().withMessage('Amount must be a number'),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
     }
+];
+
+// Input validation and SQL injection prevention
+app.post("/sale", validateSaleInput, (req, res) => {
+    const { customer, amount } = req.body;
 
     const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
     db.query(sql, [customer, amount], (err, result) => {
@@ -40,9 +51,19 @@ app.post("/sale", (req, res) => {
 });
 
 // Error handling and pagination for fetching sales
-app.get("/sales", (req, res) => {
-    const limit = parseInt(req.query.limit as string) || 10;
-    const offset = parseInt(req.query.offset as string) || 0;
+app.get("/sales", [
+    query('limit').optional().isInt({ min: 1 }).toInt(),
+    query('offset').optional().isInt({ min: 0 }).toInt(),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
+    }
+], (req, res) => {
+    const limit = req.query.limit || 10;
+    const offset = req.query.offset || 0;
 
     const sql = "SELECT * FROM sales LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, results) => {
@@ -54,11 +75,17 @@ app.get("/sales", (req, res) => {
 });
 
 // Error handling on delete operation
-app.delete("/sale/:id", (req, res) => {
-    const saleId = parseInt(req.params.id);
-    if (isNaN(saleId)) {
-        return res.status(400).send("Invalid sale ID");
+app.delete("/sale/:id", [
+    param('id').isInt().withMessage('Invalid sale ID').toInt(),
+    (req, res, next) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+        next();
     }
+], (req, res) => {
+    const saleId = req.params.id;
 
     const sql = "DELETE FROM sales WHERE id = ?";
     db.query(sql, [saleId], (err, result) => {
