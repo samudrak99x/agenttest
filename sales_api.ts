@@ -44,6 +44,7 @@ app.post("/sale", validateSaleInput, (req, res) => {
     const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
     db.query(sql, [customer, amount], (err, result) => {
         if (err) {
+            console.error("Error inserting sale", err);
             return res.status(500).send("Error inserting sale");
         }
         res.status(201).send("Sale added");
@@ -68,6 +69,7 @@ app.get("/sales", [
     const sql = "SELECT * FROM sales LIMIT ? OFFSET ?";
     db.query(sql, [limit, offset], (err, results) => {
         if (err) {
+            console.error("Error fetching sales", err);
             return res.status(500).send("Error fetching sales");
         }
         res.json(results);
@@ -90,6 +92,7 @@ app.delete("/sale/:id", [
     const sql = "DELETE FROM sales WHERE id = ?";
     db.query(sql, [saleId], (err, result) => {
         if (err) {
+            console.error("Error deleting sale", err);
             return res.status(500).send("Error deleting sale");
         }
         res.send("Sale deleted");
