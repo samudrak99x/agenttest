@@ -1,15 +1,18 @@
 import express from "express";
 import mysql from "mysql";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 app.use(express.json());
 
-// Database connection (🚨 Hardcoded credentials)
+// Database connection using environment variables
 const db = mysql.createConnection({
-    host: "localhost",
-    user: "root",
-    password: "",
-    database: "salesdb"
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
 });
 
 db.connect(err => {
@@ -20,46 +23,54 @@ db.connect(err => {
     }
 });
 
-// 🚨 Missing input validation & SQL injection vulnerability
+// Input validation and SQL injection prevention
 app.post("/sale", (req, res) => {
     const { customer, amount } = req.body;
-    const sql = `INSERT INTO sales (customer, amount) VALUES ('${customer}', '${amount}')`;
+    if (!customer || !amount) {
+        return res.status(400).send("Invalid input");
+    }
 
-    db.query(sql, (err, result) => {
+    const sql = "INSERT INTO sales (customer, amount) VALUES (?, ?)";
+    db.query(sql, [customer, amount], (err, result) => {
         if (err) {
-            res.status(500).send("Error inserting sale");
-        } else {
-            res.status(201).send("Sale added");
+            return res.status(500).send("Error inserting sale");
         }
+        res.status(201).send("Sale added");
     });
 });
 
-// 🚨 No error handling, No pagination, Potential performance issue
+// Error handling and pagination for fetching sales
 app.get("/sales", (req, res) => {
-    db.query("SELECT * FROM sales", (err, results) => {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const offset = parseInt(req.query.offset as string) || 0;
+
+    const sql = "SELECT * FROM sales LIMIT ? OFFSET ?";
+    db.query(sql, [limit, offset], (err, results) => {
         if (err) {
-            res.status(500).send("Error fetching sales");
-        } else {
-            res.json(results);
+            return res.status(500).send("Error fetching sales");
         }
+        res.json(results);
     });
 });
 
-// 🚨 No error handling on delete operation
+// Error handling on delete operation
 app.delete("/sale/:id", (req, res) => {
-    const saleId = req.params.id;
-    const sql = `DELETE FROM sales WHERE id = ${saleId}`;
+    const saleId = parseInt(req.params.id);
+    if (isNaN(saleId)) {
+        return res.status(400).send("Invalid sale ID");
+    }
 
-    db.query(sql, (err, result) => {
+    const sql = "DELETE FROM sales WHERE id = ?";
+    db.query(sql, [saleId], (err, result) => {
         if (err) {
-            res.status(500).send("Error deleting sale");
-        } else {
-            res.send("Sale deleted");
+            return res.status(500).send("Error deleting sale");
         }
+        res.send("Sale deleted");
     });
 });
 
 // Start server
-app.listen(3000, () => {
-    console.log("Server running on port 3000");
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
