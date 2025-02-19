@@ -51,7 +51,7 @@ const validateSaleInput = [
     }
 ];
 
-// Input validation and SQL injection prevention
+// Route to add a new sale
 app.post("/sale", validateSaleInput, (req, res) => {
     const { customer, amount } = req.body;
 
@@ -65,7 +65,7 @@ app.post("/sale", validateSaleInput, (req, res) => {
     });
 });
 
-// Error handling and pagination for fetching sales
+// Route to fetch sales with pagination
 app.get("/sales", [
     query('limit').optional().isInt({ min: 1 }).toInt(),
     query('offset').optional().isInt({ min: 0 }).toInt(),
@@ -90,7 +90,7 @@ app.get("/sales", [
     });
 });
 
-// Error handling on delete operation
+// Route to delete a sale by ID
 app.delete("/sale/:id", [
     param('id').isInt().withMessage('Invalid sale ID').toInt(),
     (req, res, next) => {
